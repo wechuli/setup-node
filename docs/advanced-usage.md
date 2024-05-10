@@ -418,3 +418,52 @@ Please refer to the [Ensuring workflow access to your package - Configuring a pa
 
 ### always-auth input
 The always-auth input sets `always-auth=true` in .npmrc file. With this option set [npm](https://docs.npmjs.com/cli/v6/using-npm/config#always-auth)/yarn sends the authentication credentials when making a request to the registries.
+
+## Hosted tool cache
+
+GitHub hosted runners have a tool cache that comes with a few versions of Node already installed. This tool cache helps speed up runs and tool setup by not requiring any new downloads. There is an environment variable called `RUNNER_TOOL_CACHE` on each runner that describes the location of the tool cache with Node installed. 
+`setup-node` works by taking a specific version of Node from this tool cache and adding it to PATH.
+
+|                          | Location                   |
+|--------------------------|----------------------------|
+| **Tool cache Directory** | `RUNNER_TOOL_CACHE`        |
+| **Node tool cache**      | `RUNNER_TOOL_CACHE/node/*` |
+
+
+GitHub runner images are set up in [actions/runner-images](https://github.com/actions/runner-images). During the setup, the available versions of Node are automatically downloaded, set up and documented.
+- Tool cache setup for Ubuntu: [Install-Toolset.ps1](https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/Install-Toolset.ps1) [Configure-Toolset.ps1](https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/Configure-Toolset.ps1)
+- Tool cache setup for Windows: [Install-Toolset.ps1](https://github.com/actions/runner-images/blob/main/images/windows/scripts/build/Install-Toolset.ps1) [Configure-Toolset.ps1](https://github.com/actions/runner-images/blob/main/images/windows/scripts/build/Configure-Toolset.ps1)
+
+
+## Using `setup-node` with a self-hosted runner
+
+If you have a supported self-hosted runner and you would like to use `setup-node`, there are a few extra things you need to make sure are set up so that new versions of Node can be downloaded and configured on your runner.
+
+
+### Windows
+
+- Your runner needs to be running with administrator privileges so that the appropriate directories and files can be set up when downloading and installing a new version of Node for the first time.
+- If your runner is configured as a service, make sure the account that is running the service has the appropriate write permissions so that Node can get installed. The default `NT AUTHORITY\NETWORK SERVICE` should be sufficient.
+- You need `7zip` installed and added to your `PATH` so that the downloaded versions of Node files can be extracted properly during the first-time setup.
+
+> By default runner downloads and installs tools into the folder set up by `RUNNER_TOOL_CACHE` environment variable. The environment variable called `AGENT_TOOLSDIRECTORY` can be set to change this location for Windows self-hosted runners.
+
+>If you are experiencing problems while configuring Node on your self-hosted runner, turn on [step debugging](https://github.com/actions/toolkit/blob/main/docs/action-debugging.md#step-debug-logs) to see additional logs.
+
+### Linux
+
+By default runner downloads and installs tools into the folder set up by `RUNNER_TOOL_CACHE` environment variable. The environment variable called `AGENT_TOOLSDIRECTORY` can be set to change this location for Linux self-hosted runners:
+- In the same shell that your runner is using, type `export AGENT_TOOLSDIRECTORY=/path/to/folder`.
+- More permanent way of setting the environment variable is to create an `.env` file in the same directory as your runner and to add `AGENT_TOOLSDIRECTORY=/path/to/folder`. This ensures the variable is always set if your runner is configured as a service.
+
+If you're using a non-default tool cache directory be sure that the user starting the runner has write permission to the new tool cache directory. To check the current user and group that the runner belongs type `ls -l` inside the runner's root directory.
+
+The runner can be granted write access to any directory using a few techniques:
+- The user starting the runner is the owner, and the owner has write permission.
+- The user starting the runner is in the owning group, and the owning group has write permission.
+- All users have write permission.
+  One quick way to grant access is to change the user and group of the non-default tool cache folder to be the same as the runners using `chown`:
+  `sudo chown runner-user:runner-group /path/to/folder`.
+
+> If your runner is configured as a service and you run into problems, make sure the user that the service is running as is correct. For more information, you can [check the status of your self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/configuring-the-self-hosted-runner-application-as-a-service#checking-the-status-of-the-service).
+
