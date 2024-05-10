@@ -11,13 +11,12 @@ import {getNodeVersionFromFile, printEnvDetailsAndSetOutput} from './util';
 import {State} from './constants';
 
 export async function run() {
-
   if (process.env.AGENT_TOOLSDIRECTORY?.trim()) {
     process.env['RUNNER_TOOL_CACHE'] = process.env['AGENT_TOOLSDIRECTORY'];
   }
 
   core.debug(
-      `Node is expected to be installed into ${process.env['RUNNER_TOOL_CACHE']}`
+    `Node is expected to be installed into ${process.env['RUNNER_TOOL_CACHE']}`
   );
   try {
     //
